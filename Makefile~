@@ -1,0 +1,27 @@
+DEBUG := -g
+CC = g++
+CXX = g++
+EXECUTABLE = server client
+LIB     =
+CFLAG   = -c -Wall $(DEBUG)
+CPPFLAG = $(CFLAG)
+LDFLAG = $(LIB)
+#LOC    = ./
+
+all: $(EXECUTABLE)
+
+server: mmap.o GTPClient.o 
+	$(CXX) -o $@ $^
+
+client: client.o
+	$(CXX) -o $@ $^ 
+
+.c.o:
+	$(CC) ${CFLAG} -c -o $@ $< $(LIBS)
+
+.cpp.o:
+	$(CXX) ${CPPFLAG} -c -o $@ $< $(LIBS)
+
+clean:
+	rm *.o
+	rm $(EXECUTABLE)
