@@ -276,7 +276,7 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
                 if ( (Sent_Bytenum = send(fds, "SUCCEED", 8, 0)) < 0 ){                             // Inform the client with success information
                     perror("Server: SendError"); exit(1);
                 }
-                cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl; 
+                cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;
                 RoundDone = true;    
             }                    
         }
@@ -303,6 +303,54 @@ void Set_username(int fds){
         } 
     }
     free(buf);
+}
+
+unsigned int busRam[38];
+unsigned int temp;
+void busMap(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], unsigned int busRam[38]) {
+
+    for (int j = 0; j < 19; j++) {
+        for (int i = 0, temp = 0x00; i < 16; i++) {
+            temp = temp << 2 | PiecesMap[j][i];
+        }
+        busRam[j] = temp;
+        for (int i = 16, temp = 0x00; i < 19; i++) {
+            temp = temp << 2 | PiecesMap[j][i];
+        }
+        busRam[j + 19] = temp;
+    }
+}
+
+
+
+int busSend(unsigned int busRam[38]) {
+    int fd;
+    void *map_addr;
+    int size;
+    volatile unsigned int *mapped;
+
+    fd = open("/dev/uio0", O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open devfile");
+        return 1;
+    }
+    map_addr = mmap( NULL, 512, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    if (map_addr == MAP_FAILED) {
+        perror("Failed to mmap");
+        return 1;
+    }
+    mapped = map_addr;
+    for (int i = 0; i < 19; i++) {    
+        mapped[i + 19] = busRam[i + 19];
+        mapped[i     ] = busRam[i     ];
+    }
+
+
+    munmap(map_addr, size);
+
+    close(fd);
+    return 0;
 }
 
 int main()
@@ -337,10 +385,14 @@ int main()
 
     while (i--) {
         Quit = Client_Comminication(fds1, 1, position);
+        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        busSend(busRam);              //Send board info to the bus
         if ( Quit == true ) 
             break;
         usleep(5000);
         Quit = Client_Comminication(fds2, 2, position);
+        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        busSend(busRam);              //Send board info to the bus
         if ( Quit == true )
             break;
     }
