@@ -40,6 +40,7 @@ using namespace std;
 GoBoard goboard;
 GTPClient client("gnugo.gtp");
 int fds1, fds2;
+bool user1, user2;
 int bc, wc;
 char *User_name1, *User_name2;
 
@@ -150,7 +151,9 @@ int initSocket(const char* addr) {
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    //hints.ai_flags = AI_PASSIVE; // use my IP
+    if (addr == NULL) {
+        hints.ai_flags = AI_PASSIVE; // use my IP
+    }
 
     if ((rv = getaddrinfo(addr, PORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
@@ -228,6 +231,7 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
         perror("Server: SendError"); exit(1);
     }
     RoundDone = false;
+    Quit = false;
     while ( !RoundDone && (Recv_Bytenum = recv(fds, buf, sizeof(buf), 0)) > 0 ){
         buf[Recv_Bytenum] = '\0';
         if ( color == 1)                                                                            // MAIMENG
@@ -237,6 +241,7 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
         if ( strcmp(buf, "QUIT") == 0 ){
             send(fds1, "GAMEOVER", 9, 0);                                                           // Send gameover message to both client
             send(fds2, "GAMEOVER", 9, 0);
+            user1 = user2 = false;
             if ( color == 1 )
                 printf("USER: %s QUIT!\n", User_name1);
             else 
@@ -313,10 +318,11 @@ int main()
     sockfd = initSocket("0.0.0.0");
 
     printf("server: waiting for connections...\n");
-    
+
     fds1 = waitClient(sockfd); //block here
     fds2 = waitClient(sockfd); //block here
-
+    user1 = true;
+    user2 = true;
     /*  Here to receive the first two message from fds1 and fds2
      *
      *  Usr1 & Usr2
@@ -326,7 +332,7 @@ int main()
 
     int i = 300;                                                                                        
     bool Quit;
-        
+
     PiecesPosition position = { 0, 1, 1 };
 
     while (i--) {
@@ -339,17 +345,19 @@ int main()
             break;
     }
     printf("Game_Over\n");
+    if ( user1 ) send(fds1, "GAMEOVER", 9, 0);
+    if ( user2 ) send(fds2, "GAMEOVER", 9, 0);
     if ( User_name1 ) free(User_name1);
     if ( User_name2 ) free(User_name2);
     return 0;               // ???
 
-/*    if (!fork()) { // this is the child process
-        close(sockfd); // child doesn't need the listener
-        if (send(new_fd, "Hello, world!", 13, 0) == -1)
-            perror("send");
-        close(new_fd);
-        exit(0);
-    }*/
+    /*    if (!fork()) { // this is the child process
+          close(sockfd); // child doesn't need the listener
+          if (send(new_fd, "Hello, world!", 13, 0) == -1)
+          perror("send");
+          close(new_fd);
+          exit(0);
+          }*/
     //close(new_fd);  // parent doesn't need this
 
     for(;;){
@@ -378,3 +386,4 @@ int main()
 
     return 0;
 }
+

@@ -1,6 +1,6 @@
 /*
-** client.cpp -- a stream socket client demo
-*/
+ ** client.cpp -- a stream socket client demo
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     // loop through all the results and connect to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
+                        p->ai_protocol)) == -1) {
             perror("client: socket");
             continue;
         }
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         }
 
         /* Read the client operation */
-        
+
         scanf("%s", cmd);
         toUpper_s(cmd, strlen(cmd) + 1);        
         while ( strcmp(cmd, "QUIT") != 0 && !Game_over ){
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
             }
         }    
     }    
-        
+
     if ( cmd ) free(cmd);
     close(sockfd);
 

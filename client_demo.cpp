@@ -1,6 +1,6 @@
 /*
-** client.cpp -- a stream socket client demo
-*/
+ ** client.cpp -- a stream socket client demo
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     // loop through all the results and connect to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
+                        p->ai_protocol)) == -1) {
             perror("client: socket");
             continue;
         }
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
      *  Define the argv[2] as User name 
      *  the first messgae is not gonna be sent
      */
-
+    send(sockfd, argv[2], strlen(argv[2]) + 1, 0);
     Game_over = false;
     while( !Game_over ){
         /* Wait for server to wake me up */

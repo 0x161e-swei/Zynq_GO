@@ -1,2 +1,2 @@
 #!/bin/sh
-gnugo --mode gtp --level 10
+gnugo --mode gtp --level 0
