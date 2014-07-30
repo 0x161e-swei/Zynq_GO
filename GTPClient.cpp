@@ -198,6 +198,23 @@ bool GTPClient::ShowBoard(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], int &bc
 
 }
 
+string GTPClient::ShowResult()
+{
+    const string pingCmd("final_score");
+    stringstream rets;
+    string result;
+    bool ret = false;
+
+    ret = GTPCommand(pingCmd, rets);
+
+    if ( ret ){
+        rets >> result;
+    }
+
+    return result;
+
+}
+
 GTPClient::GTPClient(const string prog): prog(prog), seq(0)
 {
     GTPFork();

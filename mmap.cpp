@@ -5,6 +5,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string>
 #include <string.h>
 #include <unistd.h>
 #include <cstdlib>
@@ -386,8 +387,8 @@ int main()
     sockfd = initSocket("0.0.0.0");
 
     printf("server: waiting for connections...\n");
-    busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-    busSend(busRam);              //Send board info to the bus
+    //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+    //busSend(busRam);              //Send board info to the bus
 
     fds1 = waitClient(sockfd); //block here
     fds2 = waitClient(sockfd); //block here
@@ -407,18 +408,21 @@ int main()
 
     while (i--) {
         Quit = Client_Comminication(fds1, 1, position);
-        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-        busSend(busRam);              //Send board info to the bus
+        //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        //busSend(busRam);              //Send board info to the bus
         if ( Quit == true ) 
             break;
         usleep(5000);
         Quit = Client_Comminication(fds2, 2, position);
-        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-        busSend(busRam);              //Send board info to the bus
+        //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        //busSend(busRam);              //Send board info to the bus
         if ( Quit == true )
             break;
     }
+
     printf("Game_Over\n");
+    cout << client.ShowResult() << endl;
+
     if ( user1 ) send(fds1, "GAMEOVER", 9, 0);
     if ( user2 ) send(fds2, "GAMEOVER", 9, 0);
     if ( User_name1 ) free(User_name1);
