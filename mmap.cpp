@@ -331,10 +331,9 @@ void busMap(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], unsigned int busRam[3
 
 int inline busSend(unsigned int busRam[38]) {
     int fd;
-    void *map_addr, *text_addr;
-    int size_board, size_text;
+    void *map_addr;
+    int size_board;
     volatile unsigned int *mapped;
-    volatile char *textBuffer;
 
     fd = open("/dev/uio0", O_RDWR);
     if (fd < 0) {
@@ -343,8 +342,6 @@ int inline busSend(unsigned int busRam[38]) {
     }
     size_board = sizeof(int) * 64 + sizeof(char) * 512;
     map_addr = mmap( NULL, size_board, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    size_text  = sizeof(char) * 512;
-    //text_addr = mmap( NULL, size_text, PROT_READ | PROT_WRITE, MAP_SHARED, fd, size_board);
 
     if (map_addr == MAP_FAILED) {
         perror("Failed to mmap");
@@ -352,8 +349,6 @@ int inline busSend(unsigned int busRam[38]) {
     }
 
     mapped = (volatile unsigned int *)map_addr;
-    text_addr = (void *) ((int)mapped + 256);
-    textBuffer = (volatile char *)text_addr;
 
     for (int i = 0; i < 19; i++) {    
         mapped[i + 19] = 0xffffffff;
@@ -368,7 +363,6 @@ int inline busSend(unsigned int busRam[38]) {
     //mapped[70     ] = 0xffffffff;
 
     munmap(map_addr, size_board);
-    munmap(text_addr, size_text);
 
     close(fd);
     return 0;

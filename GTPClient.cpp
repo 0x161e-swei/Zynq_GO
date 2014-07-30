@@ -3,7 +3,10 @@
  *
  *  Created on: Apr 10, 2014
  *      Author: gongbingchen
-*/
+ *  Modified on:Jun 30, 2014
+ *      Author: taoj
+ *      Author: weishijia
+ */
 #include "GTPClient.h"
 #include <iostream>
 
@@ -107,9 +110,9 @@ bool GTPClient::Move(PiecesPosition position, int color)
     bool ret = false;
     stringstream pingPosition;
     pingPosition<<pingCmd<<" "
-                <<pingColor<<" "
-                <<PositionXTable[position.piecesx]
-                <<position.piecesy+1;
+        <<pingColor<<" "
+        <<PositionXTable[position.piecesx]
+        <<position.piecesy+1;
 
     ret = GTPCommand(pingPosition.str(), rets);
 
@@ -203,7 +206,7 @@ string GTPClient::ShowResult()
     const string pingCmd("final_score");
     stringstream rets;
     string result;
-    bool ret = false;
+    bool ret;
 
     ret = GTPCommand(pingCmd, rets);
 

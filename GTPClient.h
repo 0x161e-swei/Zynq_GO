@@ -35,7 +35,7 @@ public:
     bool Move(PiecesPosition position, int color);
     bool GenMove(int color, PiecesPosition &position);
     bool ShowBoard(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], int &bc, int &wc);
-    string ShowResult();              // Added to show final score
+    std::string ShowResult();              // Added to show final score
     ~GTPClient();
 };
 
