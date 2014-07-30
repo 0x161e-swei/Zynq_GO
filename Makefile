@@ -11,7 +11,7 @@ LDFLAG = $(LIB)
 all: $(EXECUTABLE)
 	chmod +x gnugo.gtp
 
-server: mmap.o GTPClient.o 
+server: mmap.o GTPClient.o busOperation.o
 	$(CXX) -o $@ $^
 
 client: client.o
