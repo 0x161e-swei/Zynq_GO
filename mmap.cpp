@@ -330,17 +330,20 @@ void busMap(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], unsigned int busRam[3
 
 int inline busSend(unsigned int busRam[38]) {
     int fd;
-    void *map_addr;
+    void *map_addr, *text_addr;
+    int size_board, size_text;
     volatile unsigned int *mapped;
-    int size = 512;
+    volatile char *textBuffer;
 
     fd = open("/dev/uio0", O_RDWR);
     if (fd < 0) {
         perror("Failed to open devfile");
         return 1;
     }
-
-    map_addr = mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    size_board = sizeof(int) * 64 + sizeof(char) * 512;
+    map_addr = mmap( NULL, size_board, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    size_text  = sizeof(char) * 512;
+    //text_addr = mmap( NULL, size_text, PROT_READ | PROT_WRITE, MAP_SHARED, fd, size_board);
 
     if (map_addr == MAP_FAILED) {
         perror("Failed to mmap");
@@ -348,14 +351,23 @@ int inline busSend(unsigned int busRam[38]) {
     }
 
     mapped = (volatile unsigned int *)map_addr;
+    text_addr = (void *) ((int)mapped + 256);
+    textBuffer = (volatile char *)text_addr;
 
     for (int i = 0; i < 19; i++) {    
-        mapped[i + 19] = busRam[37 - i];
-        mapped[i     ] = busRam[18 - i];
+        mapped[i + 19] = 0xffffffff;
+        mapped[i     ] = 0xffffffff;
+        //mapped[i + 19] = busRam[37 - i];
+        //mapped[i     ] = busRam[18 - i];
     }
 
+    for (int i = 0; i < 0; i++) {
+        mapped[i] = 0xcccccccc;
+    }	
+    //mapped[70     ] = 0xffffffff;
 
-    munmap(map_addr, size);
+    munmap(map_addr, size_board);
+    munmap(text_addr, size_text);
 
     close(fd);
     return 0;
