@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -62,8 +63,8 @@ int busSend(unsigned int busRam[38]) {
     mapped = (volatile unsigned int *)map_addr;
 
     for (int i = 0; i < 19; i++) {    
-        mapped[i + 19] = 0xffffffff;
-        mapped[i     ] = 0xffffffff;
+        mapped[i + 19] = busRam[i + 19];
+        mapped[i     ] = busRam[i 	   ];
     }
 
     munmap(map_addr, size_board);
@@ -72,11 +73,13 @@ int busSend(unsigned int busRam[38]) {
     return 0;
 }
 
-int busText(const char* a) {
+int busText(const char* display_buffer, bool dummyline) {
     int fd;
+    unsigned int i;
     void *map_addr;
     int size_board;
     volatile unsigned int *mapped;
+    static int Current_Line = 0;
 
     fd = open("/dev/uio0", O_RDWR);
     if (fd < 0) {
@@ -92,14 +95,23 @@ int busText(const char* a) {
     }
 
     mapped = (volatile unsigned int *)map_addr;
-    mapped += 64;
-    for (int i = 0; i < 512; i++) {
-        mapped[i] = i % 128;
-    }   
-    mapped[0] = a[0];
-    mapped[1] = a[1];
-    mapped[2] = a[2];
-    mapped[3] = a[3];
+    mapped += MAPTEXT_OFFSET;
+
+    if ( Current_Line >= 32 ){
+        Current_Line = 0;
+        for (i = 0; i < 512; i++)
+            mapped[i] = 0;
+    }
+
+    mapped += Current_Line * 16;                                                               // Set the starting addr
+
+    for (i = 0; i < strlen(display_buffer); i++)
+        mapped[i] = display_buffer[i];
+    for (;i < 16; i++)	
+        mapped[i] = ' ';
+    if ( dummyline )
+        Current_Line++;
+
 
     munmap(map_addr, size_board);
 

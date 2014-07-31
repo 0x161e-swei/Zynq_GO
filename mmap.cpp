@@ -33,6 +33,9 @@
 
 #define BACKLOG 10     // how many pending connections queue will hold
 
+#define USER_QUIT 1
+#define TEN_PASS 2
+
 #include "busOperation.h"
 using namespace std;
 
@@ -42,9 +45,10 @@ using namespace std;
 GoBoard goboard;
 GTPClient client("gnugo.gtp");
 int fds1, fds2;
-bool user1, user2;
+bool user[2];
 int bc, wc;
-char *User_name1, *User_name2;
+char *User_name[2], output_msg[20];
+unsigned int busRam[38];
 
 
 void sigchld_handler(int s)
@@ -226,41 +230,45 @@ void Set_Move_Position(char *buf, PiecesPosition &position, int color)
 
 int Client_Comminication(int fds, int color, PiecesPosition &position)
 {
-    int Sent_Bytenum, Recv_Bytenum;
-    bool RoundDone, Move_ret , Quit;                                                                // RoundDone to mark if the user finished current round
+    int Sent_Bytenum, Recv_Bytenum, Quit; 
+    bool RoundDone, Move_ret;                                                                       // RoundDone to mark if the user finished current round
+    static int pass_time = 0;                                                              
     char buf[255];
     if ( (Sent_Bytenum = send(fds, "WAKE", 4, 0)) < 0 ){    
         perror("Server: SendError"); exit(1);
     }
     RoundDone = false;
-    Quit = false;
+    Quit = 0;
     while ( !RoundDone && (Recv_Bytenum = recv(fds, buf, sizeof(buf), 0)) > 0 ){
         buf[Recv_Bytenum] = '\0';
         if ( color == 1)                                                                            // MAIMENG
             printf("1, buf: %s\n", buf);
         else 
             printf("2, buf :%s\n", buf);
+
         if ( strcmp(buf, "QUIT") == 0 ){
             send(fds1, "GAMEOVER", 9, 0);                                                           // Send gameover message to both client
             send(fds2, "GAMEOVER", 9, 0);
-            user1 = user2 = false;
-            if ( color == 1 )
-                printf("USER: %s QUIT!\n", User_name1);
-            else 
-                printf("USER: %s QUIT!\n", User_name2);
-            Quit = true;                                                                            // Quit = TRUE when user send quit message
+            user[0] = user[1] = false;
+            sprintf(output_msg, "%s QUIT!", User_name[color - 1]);
+            busText(output_msg);
+            Quit = USER_QUIT;                                                                            // Quit = 1 when user send quit message
             RoundDone = true;
         }
         else if ( strcmp(buf, "GEN") == 0 ) {
             cout << client.GenMove(color, position) << endl;
-            cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;        
+            cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;
+            sprintf(output_msg, "%s Gen", User_name[color - 1]);
+            busText(output_msg);			
+            pass_time = 0;      
             RoundDone = true;
         }
         else if ( strcmp(buf, "PASS") == 0 ) {
-            if ( color == 1 )
-                printf("USER: %s PASS!\n", User_name1);
-            else 
-                printf("USER: %s PASS!\n", User_name2);
+            pass_time++;
+            if ( pass_time >= 10 ) Quit = TEN_PASS; 
+            // TEN_PASS
+            sprintf(output_msg, "%s PASS!", User_name[color - 1]);
+            busText(output_msg);
             RoundDone = true;
         }
         else if ( strlen(buf) == 2 || strlen(buf) == 3 ){                                           // Set piece
@@ -274,11 +282,13 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
                 }
             }
             else{
-                printf("Usr1 set piece successfully at %s\n", buf);
+                sprintf(output_msg, "%s set at %s", User_name[color - 1], buf);
+                busText(output_msg);
                 if ( (Sent_Bytenum = send(fds, "SUCCEED", 8, 0)) < 0 ){                             // Inform the client with success information
                     perror("Server: SendError"); exit(1);
                 }
                 cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;
+                pass_time = 0;
                 RoundDone = true;    
             }                    
         }
@@ -286,7 +296,8 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
     return Quit;  
 } 
 
-void Set_username(int fds){
+void Set_username(int fds, int num)
+{
     char *buf;
     int Len;
     buf = (char *)malloc(255 * sizeof(char));
@@ -295,24 +306,43 @@ void Set_username(int fds){
     }  
     else{
         buf[Len] = '\0';
-        if ( fds == fds1 ){
-            User_name1 = (char *)malloc(strlen(buf) + 1);
-            strcpy(User_name1, buf);
-        }
-        else{
-            User_name2 = (char *)malloc(strlen(buf) + 1);
-            strcpy(User_name2, buf);
-        } 
+        /*
+           if ( fds == fds1 ){
+           User_name[0] = (char *)malloc(strlen(buf) + 1);
+           strcpy(User_name[0], buf);
+           }
+           else{
+           User_name[1] = (char *)malloc(strlen(buf) + 1);
+           strcpy(User_name[1], buf);
+           }
+           */ 
+        User_name[num] = (char *)malloc(strlen(buf) + 1);
+        strcpy(User_name[num], buf);
     }
     free(buf);
 }
 
+void Welcome_user(int fd, int num)
+{
+    char *Welcome_buffer_1, *Welcome_buffer_2;
 
+    user[num] = true;
+    Set_username(fd, num);
+    Welcome_buffer_1 = (char*)malloc(16 * sizeof(char));
+    Welcome_buffer_2 = (char*)malloc(16 * sizeof(char));
+    memset(Welcome_buffer_2, 0, 16);
+    sprintf(Welcome_buffer_1, "Hello, Player%d:  ", num + 1);
+    busText(Welcome_buffer_1);
+    sprintf(Welcome_buffer_2, "  %s", User_name[num]);
+    busText(Welcome_buffer_2);
+    free(Welcome_buffer_1);
+    free(Welcome_buffer_2);
+}
 
 int main()
 {
 
-    int piecesTurn = 1;
+    int piecesTurn = 1, j;
     bool ret;
     cout<<"Initialized GoBoard"<<endl;
 
@@ -322,46 +352,70 @@ int main()
     sockfd = initSocket("0.0.0.0");
 
     printf("server: waiting for connections...\n");
-    //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-    //busSend(busRam);              //Send board info to the bus
+    busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+    busSend(busRam);              //Send board info to the bus
 
-    fds1 = waitClient(sockfd); //block here
-    fds2 = waitClient(sockfd); //block here
-    user1 = true;
-    user2 = true;
     /*  Here to receive the first two message from fds1 and fds2
      *
      *  Usr1 & Usr2
      */
-    Set_username(fds1);
-    Set_username(fds2);
 
-    int i = 300;                                                                                        
-    bool Quit;
+    for (j = 0; j < 32; j++)
+        busText("                ");
+
+    fds1 = waitClient(sockfd); //block here
+    Welcome_user(fds1, 0);
+
+
+    fds2 = waitClient(sockfd); //block here
+    Welcome_user(fds2, 1);   
+
+
+
+
+    int i = 30;                                                                                        
+    int Quit;
 
     PiecesPosition position = { 0, 1, 1 };
 
-    while (i--) {
+    while ( 1 ) {
+        busText("Player1 thinking", false);
         Quit = Client_Comminication(fds1, 1, position);
-        //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-        //busSend(busRam);              //Send board info to the bus
-        if ( Quit == true ) 
+        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        busSend(busRam);              //Send board info to the bus
+        if ( Quit != 0 ) 
             break;
         usleep(5000);
+        busText("Player2 thinking", false);
         Quit = Client_Comminication(fds2, 2, position);
-        //busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-        //busSend(busRam);              //Send board info to the bus
-        if ( Quit == true )
+        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        busSend(busRam);              //Send board info to the bus
+        if ( Quit != 0 )
             break;
     }
 
     printf("Game_Over\n");
-    cout << client.ShowResult() << endl;
+    if ( Quit == TEN_PASS )
+        busText("5 pass in a row");
+    busText("**It may take a");
+    busText("while to compute");
+    busText("the result. ");
+    busText("~~ Be patient ~~");
+    string str = client.ShowResult();
+    cout << str << endl;
 
-    if ( user1 ) send(fds1, "GAMEOVER", 9, 0);
-    if ( user2 ) send(fds2, "GAMEOVER", 9, 0);
-    if ( User_name1 ) free(User_name1);
-    if ( User_name2 ) free(User_name2);
+    busText(str.c_str());
+
+    if ( user[0] ){
+        send(fds1, "GAMEOVER", 9, 0);
+        user[0] = false;      
+    } 
+    if ( user[1] ){
+        send(fds2, "GAMEOVER", 9, 0);
+        user[1] = false;   
+    } 
+    if ( User_name[0] ) free(User_name[0]);
+    if ( User_name[1] ) free(User_name[1]);
     return 0;               // ???
 
     /*    if (!fork()) { // this is the child process
