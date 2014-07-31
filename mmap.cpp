@@ -370,10 +370,6 @@ int main()
     fds2 = waitClient(sockfd); //block here
     Welcome_user(fds2, 1);   
 
-
-
-
-    int i = 30;                                                                                        
     int Quit;
 
     PiecesPosition position = { 0, 1, 1 };
