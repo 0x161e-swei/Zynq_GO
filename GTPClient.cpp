@@ -15,6 +15,7 @@ using namespace std;
 const char GTPClient::PositionXTable[] = "ABCDEFGHJKLMNOPQRST";
 const char * GTPClient::ColorString[] = {NULL, "black", "white"};
 
+
 void GTPClient::GTPFork()
 {
     int pipefd0[2],pipefd1[2];

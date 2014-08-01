@@ -63,8 +63,8 @@ int busSend(unsigned int busRam[38]) {
     mapped = (volatile unsigned int *)map_addr;
 
     for (int i = 0; i < 19; i++) {    
-        mapped[i + 19] = busRam[i + 19];
-        mapped[i     ] = busRam[i 	   ];
+        mapped[i + 19] = busRam[37 - i];
+        mapped[i     ] = busRam[18 - i];
     }
 
     munmap(map_addr, size_board);

@@ -11,19 +11,18 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "GoBoard.h"
-#include "GTPClient.h"
-
 #include <stdlib.h>
-
-#include <errno.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+
+#include "GoBoard.h"
+#include "GTPClient.h"
+#include "busOperation.h"
+#include "Communication_Bridge.h"
 
 #define GBD_IOC_MAGIC 'w' //定义类型
 #define GBD_IOCSETBD _IOW(GBD_IOC_MAGIC, 0, unsigned char)
@@ -36,12 +35,13 @@
 #define USER_QUIT 1
 #define TEN_PASS 2
 
-#include "busOperation.h"
+
 using namespace std;
 
 
-/* Global Variables */
 
+/* Global Variables */
+const char XTable[] = "ABCDEFGHJKLMNOPQRST";
 GoBoard goboard;
 GTPClient client("gnugo.gtp");
 int fds1, fds2;
@@ -228,40 +228,54 @@ void Set_Move_Position(char *buf, PiecesPosition &position, int color)
     position.status = color;                                                                        // St color
 }
 
-int Client_Comminication(int fds, int color, PiecesPosition &position)
+int Client_Communication(int fds, int color, PiecesPosition &position)
 {
     int Sent_Bytenum, Recv_Bytenum, Quit; 
     bool RoundDone, Move_ret;                                                                       // RoundDone to mark if the user finished current round
     static int pass_time = 0;                                                              
     char buf[255];
-    if ( (Sent_Bytenum = send(fds, "WAKE", 4, 0)) < 0 ){    
+    if ( (Sent_Bytenum = Send_2_Client(fds, goboard.PiecesMap, "WAKE", true, "")) < 0 ){    
         perror("Server: SendError"); exit(1);
     }
     RoundDone = false;
     Quit = 0;
-    while ( !RoundDone && (Recv_Bytenum = recv(fds, buf, sizeof(buf), 0)) > 0 ){
+    while ( !RoundDone && (Recv_Bytenum = Reqs_4_Client(fds, buf)) > 0 ){//recv(fds, buf, sizeof(buf), 0)) > 0 ){
         buf[Recv_Bytenum] = '\0';
         if ( color == 1)                                                                            // MAIMENG
-            printf("1, buf: %s\n", buf);
+            printf("1, buf: %s!\n", buf);
         else 
-            printf("2, buf :%s\n", buf);
+            printf("2, buf :%s!\n", buf);
 
         if ( strcmp(buf, "QUIT") == 0 ){
-            send(fds1, "GAMEOVER", 9, 0);                                                           // Send gameover message to both client
-            send(fds2, "GAMEOVER", 9, 0);
+            //send(fds1, "GAMEOVER", 9, 0);                                                           // Send gameover message to both client
+            //send(fds2, "GAMEOVER", 9, 0);
             user[0] = user[1] = false;
             sprintf(output_msg, "%s QUIT!", User_name[color - 1]);
             busText(output_msg);
             Quit = USER_QUIT;                                                                            // Quit = 1 when user send quit message
+            Send_2_Client(fds1, goboard.PiecesMap, "GAMEOVER", true, output_msg);
+            Send_2_Client(fds2, goboard.PiecesMap, "GAMEOVER", true, output_msg);
             RoundDone = true;
         }
         else if ( strcmp(buf, "GEN") == 0 ) {
             cout << client.GenMove(color, position) << endl;
             cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;
-            sprintf(output_msg, "%s Gen", User_name[color - 1]);
-            busText(output_msg);			
-            pass_time = 0;      
-            RoundDone = true;
+            /*if ( position.status == 7 )
+                sprintf(output_msg, "%s Gen PASS", User_name[color - 1]);
+            else{*/
+            if ( position.piecesy == 255 ){
+                sprintf(output_msg, "%s Gen PASS", User_name[color - 1]);
+                pass_time++;
+                if ( pass_time >= 10 ) Quit = TEN_PASS;
+            }
+            else{
+                sprintf(output_msg, "Gen: %c%d %s", XTable[position.piecesx], position.piecesy + 1, User_name[color - 1]);
+                pass_time = 0;      
+            }                       
+            busText(output_msg);       
+            Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, output_msg);
+            Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, output_msg);
+            RoundDone = true;    
         }
         else if ( strcmp(buf, "PASS") == 0 ) {
             pass_time++;
@@ -269,24 +283,28 @@ int Client_Comminication(int fds, int color, PiecesPosition &position)
             // TEN_PASS
             sprintf(output_msg, "%s PASS!", User_name[color - 1]);
             busText(output_msg);
+            Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, output_msg);
+            Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, output_msg);
             RoundDone = true;
         }
         else if ( strlen(buf) == 2 || strlen(buf) == 3 ){                                           // Set piece
             //printf("Piece set at %s\n", buf);
             Set_Move_Position(buf, position, color);                                                // Set position to an address user want
             Move_ret = client.Move(position, color);                                                // Attempt to set piece
+            //printf("at x,y %d%d\n", position.piecesx, position.piecesy);
             if ( !Move_ret ){                                                                       
                 printf("Illegal location, piece already exist!\n");
-                if ( (Sent_Bytenum = send(fds, "FAIL", 4, 0)) < 0 ){                                // Inform the client with a invalid position
+                if ( (Sent_Bytenum = Send_2_Client(fds, goboard.PiecesMap, "FAIL", true, "Illegal location")) < 0 ){                                // Inform the client with a invalid position
                     perror("Server: SendError"); exit(1);
                 }
             }
             else{
-                sprintf(output_msg, "%s set at %s", User_name[color - 1], buf);
+                sprintf(output_msg, "Set at %s, %s", buf, User_name[color - 1]);
                 busText(output_msg);
-                if ( (Sent_Bytenum = send(fds, "SUCCEED", 8, 0)) < 0 ){                             // Inform the client with success information
+                if ( (Sent_Bytenum = Send_2_Client(fds, goboard.PiecesMap, "SUCCEED", true, output_msg)) < 0 ){                             // Inform the client with success information
                     perror("Server: SendError"); exit(1);
                 }
+                Send_2_Client(fds1 + fds2 - fds, goboard.PiecesMap, "NOTHING", true, output_msg);
                 cout << client.ShowBoard(goboard.PiecesMap, bc, wc) << endl;
                 pass_time = 0;
                 RoundDone = true;    
@@ -376,40 +394,65 @@ int main()
 
     while ( 1 ) {
         busText("Player1 thinking", false);
-        Quit = Client_Comminication(fds1, 1, position);
+        Quit = Client_Communication(fds1, 1, position);
         busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
         busSend(busRam);              //Send board info to the bus
         if ( Quit != 0 ) 
             break;
         usleep(5000);
         busText("Player2 thinking", false);
-        Quit = Client_Comminication(fds2, 2, position);
+        Quit = Client_Communication(fds2, 2, position);
         busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
         busSend(busRam);              //Send board info to the bus
         if ( Quit != 0 )
             break;
     }
 
+
     printf("Game_Over\n");
-    if ( Quit == TEN_PASS )
+    if ( Quit == TEN_PASS ){
         busText("5 pass in a row");
+        Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, "5 pass in a row");
+        Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, "5 pass in a row");
+    }
+    usleep(5000);
     busText("**It may take a");
+    Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, "**It may take a");
+    usleep(5000);
+    Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, "**It may take a");
+    usleep(5000);
     busText("while to compute");
+    Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, "while to compute");
+    usleep(5000);
+    Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, "while to compute");
+    usleep(5000);
     busText("the result. ");
+    Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, "the result. ");
+    usleep(5000);
+    Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, "the result. ");
+    usleep(5000);
     busText("~~ Be patient ~~");
+    Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, "~~ Be patient ~~");
+    usleep(5000);
+    Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, "~~ Be patient ~~");
+
     string str = client.ShowResult();
     cout << str << endl;
-
+    usleep(5000);
     busText(str.c_str());
+    Send_2_Client(fds1, goboard.PiecesMap, "NOTHING", true, str.c_str());
+    usleep(5000);
+    Send_2_Client(fds2, goboard.PiecesMap, "NOTHING", true, str.c_str());
 
     if ( user[0] ){
-        send(fds1, "GAMEOVER", 9, 0);
+        Send_2_Client(fds1, goboard.PiecesMap, "GAMEOVER", true, "THANK U");
         user[0] = false;      
     } 
     if ( user[1] ){
-        send(fds2, "GAMEOVER", 9, 0);
+        Send_2_Client(fds2, goboard.PiecesMap, "GAMEOVER", true, "THANK U");
         user[1] = false;   
-    } 
+    }
+ 
     if ( User_name[0] ) free(User_name[0]);
     if ( User_name[1] ) free(User_name[1]);
     return 0;               // ???

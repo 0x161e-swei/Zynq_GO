@@ -15,6 +15,9 @@
 
 #include <arpa/inet.h>
 
+#include "Communication_Bridge.h"
+#include "busOperation.h"
+
 #define PORT "3490" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
@@ -50,7 +53,7 @@ void Usage_info(char *cmd, int d)
 
 int main(int argc, char *argv[])
 {
-    int sockfd;  
+    int sockfd, j;  
     char server_buf[MAXDATASIZE], *cmd;
     struct addrinfo hints, *servinfo, *p;
     bool Game_over = false;
@@ -106,14 +109,17 @@ int main(int argc, char *argv[])
      *  instead of operation message
      *
      */
-    send(sockfd, argv[2], strlen(argv[2]) + 1, 0);                      // set username
+    for (j = 0; j < 32; j++)
+        busText("                "); 
+    Send_2_Server(sockfd, argv[2]);                      // set username
     cmd = (char *)malloc(15 * sizeof(char));
     Game_over = false;
     while( !Game_over ){
         /* Wait for server to wake me up */
         printf("Waiting for wake\n");
-        if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
-            server_buf[Recv_Bytenum] = '\0';
+        //if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
+        if ( (Recv_Bytenum = Reqs_4_Server(sockfd, server_buf))){
+            //server_buf[Recv_Bytenum] = '\0';
             printf("%s\n", server_buf);
             if ( strcmp(server_buf, "GAMEOVER") == 0 ){
                 Game_over = true;
@@ -132,7 +138,8 @@ int main(int argc, char *argv[])
         toUpper_s(cmd, strlen(cmd) + 1);        
         while ( strcmp(cmd, "QUIT") != 0 && !Game_over ){
             if ( strcmp(cmd, "GEN") == 0 ){                                 // Radomly setpeice
-                if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                if ( (Send_Bytenum = Send_2_Server(sockfd, cmd)) < 0 ){
                     perror("Client: Send Error"); exit(1);
                 }
                 else{
@@ -141,7 +148,8 @@ int main(int argc, char *argv[])
                 }
             }
             else if ( strcmp(cmd, "PASS") == 0 ){
-                if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                if ( (Send_Bytenum = Send_2_Server(sockfd, cmd)) < 0 ){
                     perror("Client: Send Error"); exit(1);
                 }
                 else break;
@@ -159,6 +167,7 @@ int main(int argc, char *argv[])
                             cmd[--i] = '0' + num % 10;
                             num /= 10;
                         }
+                        /*
                         if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
                             perror("Client: Send Error"); exit(1);
                         }
@@ -173,6 +182,26 @@ int main(int argc, char *argv[])
                             }
                             else perror("Client: Wait after move error!"); exit(1);
                         }
+                        */
+                        if ( Send_2_Server(sockfd, cmd) < 0 ){
+                            perror("Client: Send Error"); exit(1);
+                        }
+                        else{
+                            usleep(50000);
+                            if ( (Recv_Bytenum = Reqs_4_Server(sockfd, server_buf)) > 0){
+                                //server_buf[Recv_Bytenum] = '\0';
+                                if ( strcmp(server_buf, "SUCCEED") == 0 ){
+                                    printf("Succeed received!\n");
+                                    break;
+                                }
+                                else Usage_info(cmd, 2);  
+                                printf("After_move buffer: %s", server_buf); 
+                            }
+                            else{
+                                perror("Client: Wait after move error!"); exit(1);       
+                            }
+                        }
+
                     }
                     else Usage_info(cmd, 1);
                 }
@@ -180,9 +209,13 @@ int main(int argc, char *argv[])
             }
             else Usage_info(cmd, 0);
         }
+        
         if ( strcmp(cmd, "QUIT") == 0 ){
-            if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
-                perror("Client: Send Error"); exit(1);
+            //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+            //    perror("Client: Send Error"); exit(1);
+            //}
+            if ( Send_2_Server(sockfd, cmd) < 0){
+                perror("Client: Send Error"); exit(1); 
             }
         }    
     }    
