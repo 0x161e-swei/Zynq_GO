@@ -137,9 +137,9 @@ int main(int argc, char *argv[])
                 //break;
             }
         }
-    }     
+        }     
 
-    close(sockfd);
+        close(sockfd);
 
-    return 0;
-}
+        return 0;
+    }

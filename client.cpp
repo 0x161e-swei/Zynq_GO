@@ -168,21 +168,21 @@ int main(int argc, char *argv[])
                             num /= 10;
                         }
                         /*
-                        if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
-                            perror("Client: Send Error"); exit(1);
-                        }
-                        else{
-                            if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
-                                server_buf[Recv_Bytenum] = '\0';
-                                if ( strcmp(server_buf, "SUCCEED") == 0 ){
-                                    printf("Succeed received!\n");
-                                    break;
-                                }
-                                else Usage_info(cmd, 2);     
-                            }
-                            else perror("Client: Wait after move error!"); exit(1);
-                        }
-                        */
+                           if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                           perror("Client: Send Error"); exit(1);
+                           }
+                           else{
+                           if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
+                           server_buf[Recv_Bytenum] = '\0';
+                           if ( strcmp(server_buf, "SUCCEED") == 0 ){
+                           printf("Succeed received!\n");
+                           break;
+                           }
+                           else Usage_info(cmd, 2);     
+                           }
+                           else perror("Client: Wait after move error!"); exit(1);
+                           }
+                           */
                         if ( Send_2_Server(sockfd, cmd) < 0 ){
                             perror("Client: Send Error"); exit(1);
                         }
@@ -208,20 +208,20 @@ int main(int argc, char *argv[])
                 else Usage_info(cmd, 0);
             }
             else Usage_info(cmd, 0);
-        }
-        
-        if ( strcmp(cmd, "QUIT") == 0 ){
-            //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
-            //    perror("Client: Send Error"); exit(1);
-            //}
-            if ( Send_2_Server(sockfd, cmd) < 0){
-                perror("Client: Send Error"); exit(1); 
             }
-        }    
-    }    
 
-    if ( cmd ) free(cmd);
-    close(sockfd);
+            if ( strcmp(cmd, "QUIT") == 0 ){
+                //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                //    perror("Client: Send Error"); exit(1);
+                //}
+                if ( Send_2_Server(sockfd, cmd) < 0){
+                    perror("Client: Send Error"); exit(1); 
+                }
+            }    
+            }    
 
-    return 0;
-}
+            if ( cmd ) free(cmd);
+            close(sockfd);
+
+            return 0;
+        }
