@@ -1,7 +1,7 @@
 DEBUG := -g
 CC = g++
 CXX = g++
-EXECUTABLE = server client client_demo 
+EXECUTABLE = server client client_demo
 LIB     =
 CFLAG   = -c -Wall $(DEBUG)
 CPPFLAG = $(CFLAG)
@@ -14,7 +14,7 @@ server: mmap.o GTPClient.o busOperation.o Communication_Bridge.o
 	$(CXX) -o $@ $^
 
 client: client.o Communication_Bridge.o busOperation.o
-	$(CXX) -o $@ $^ 
+	$(CXX) -o $@ $^
 
 client_demo: client_demo.o Communication_Bridge.o busOperation.o
 	$(CXX) -o $@ $^

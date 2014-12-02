@@ -20,9 +20,9 @@
 #include "Communication_Bridge.h"
 #include "busOperation.h"
 
-#define PORT "3490" // the port client will be connecting to 
+#define PORT "3490" // the port client will be connecting to
 
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
+#define MAXDATASIZE 100 // max number of bytes we can get at once
 
 #define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL | ICANON)
 
@@ -47,7 +47,7 @@ void toUpper_s(char * str, int len)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, j;  
+    int sockfd, j;
     char server_buf[MAXDATASIZE];
     char cmd[] = "GEN";
     struct addrinfo hints, *servinfo, *p;
@@ -98,12 +98,12 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    /* 
-     *  Define the argv[2] as User name 
+    /*
+     *  Define the argv[2] as User name
      *  the first messgae is not gonna be sent
      */
     for (j = 0; j < 32; j++)
-        busText("                "); 
+        busText("                ");
     send(sockfd, argv[2], strlen(argv[2]) + 1, 0);
     Game_over = false;
     while( !Game_over ){
@@ -117,8 +117,8 @@ int main(int argc, char *argv[])
                 continue;
             }
             else if ( strcmp(server_buf, "WAKE") != 0) {
-                continue;    
-            }    
+                continue;
+            }
         }
         else{
             perror("Client: Wait for wake error!");
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
         }
 
         /* Read the client operation */
-        if ( strcmp(cmd, "GEN") == 0 ){                                 
+        if ( strcmp(cmd, "GEN") == 0 ){
             //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
             if ( (Send_Bytenum = Send_2_Server(sockfd, cmd)) < 0 ){
                 perror("Client: Send Error");
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
                 //break;
             }
         }
-        }     
+        }
 
         close(sockfd);
 

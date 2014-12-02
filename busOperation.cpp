@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -49,11 +48,11 @@ int busSend(unsigned int busRam[38]) {
     int size_board;
     volatile unsigned int *mapped;
 
-    #ifdef XILLY_BUS
+#ifdef XILLY_BUS
     fd = open("/dev/uio0", O_RDWR);
-    #else
+#else
     fd = open("/dev/zero", O_RDWR);
-    #endif
+#endif
     if (fd < 0) {
         perror("Failed to open devfile");
         return 1;
@@ -68,7 +67,7 @@ int busSend(unsigned int busRam[38]) {
 
     mapped = (volatile unsigned int *)map_addr;
 
-    for (int i = 0; i < 19; i++) {    
+    for (int i = 0; i < 19; i++) {
         mapped[i + 19] = busRam[37 - i];
         mapped[i     ] = busRam[18 - i];
     }
@@ -87,11 +86,11 @@ int busText(const char* display_buffer, bool dummyline) {
     volatile unsigned int *mapped;
     static int Current_Line = 0;
 
-    #ifdef XILLY_BUS
+#ifdef XILLY_BUS
     fd = open("/dev/uio0", O_RDWR);
-    #else
+#else
     fd = open("/dev/zero", O_RDWR);
-    #endif
+#endif
     if (fd < 0) {
         perror("Failed to open devfile");
         return 1;
@@ -117,7 +116,7 @@ int busText(const char* display_buffer, bool dummyline) {
 
     for (i = 0; i < strlen(display_buffer); i++)
         mapped[i] = display_buffer[i];
-    for (;i < 16; i++)	
+    for (;i < 16; i++)
         mapped[i] = ' ';
     if ( dummyline )
         Current_Line++;

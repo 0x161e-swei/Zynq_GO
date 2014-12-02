@@ -18,9 +18,9 @@
 #include "Communication_Bridge.h"
 #include "busOperation.h"
 
-#define PORT "3490" // the port client will be connecting to 
+#define PORT "3490" // the port client will be connecting to
 
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
+#define MAXDATASIZE 100 // max number of bytes we can get at once
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -45,15 +45,15 @@ void Usage_info(char *cmd, int d)
         printf("Usage: enter GEN for server hint, PASS for pass current round, or a position to located piece, eg. D13.\n");
     else if ( d == 1)
         printf("Set piece: A~H or J ~ T and num from 1 to 19, eg. D13.\n");
-    else 
-        printf("Illegal position, try another position please.\n");         
+    else
+        printf("Illegal position, try another position please.\n");
     scanf("%s", cmd);
-    toUpper_s(cmd, strlen(cmd) + 1);  
+    toUpper_s(cmd, strlen(cmd) + 1);
 }
 
 int main(int argc, char *argv[])
 {
-    int sockfd, j;  
+    int sockfd, j;
     char server_buf[MAXDATASIZE], *cmd;
     struct addrinfo hints, *servinfo, *p;
     bool Game_over = false;
@@ -103,14 +103,14 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    /* 
-     *  Define the argv[2] as User name 
+    /*
+     *  Define the argv[2] as User name
      *  i.e. the first messgae is gonna be sent as username
      *  instead of operation message
      *
      */
     for (j = 0; j < 32; j++)
-        busText("                "); 
+        busText("                ");
     Send_2_Server(sockfd, argv[2]);                      // set username
     cmd = (char *)malloc(15 * sizeof(char));
     Game_over = false;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             else if ( strcmp(server_buf, "WAKE") != 0)
-                continue;       
+                continue;
         }
         else{
             perror("Client: Wait for wake error!"); exit(1);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
         /* Read the client operation */
 
         scanf("%s", cmd);
-        toUpper_s(cmd, strlen(cmd) + 1);        
+        toUpper_s(cmd, strlen(cmd) + 1);
         while ( strcmp(cmd, "QUIT") != 0 && !Game_over ){
             if ( strcmp(cmd, "GEN") == 0 ){                                 // Radomly setpeice
                 //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
                     perror("Client: Send Error"); exit(1);
                 }
                 else break;
-            }  
+            }
             else if ( strlen(cmd) == 2 || strlen(cmd) == 3 ){
                 if ( ((cmd[0] >= 'A' && cmd[0] <= 'H') || (cmd[0] >= 'J' && cmd[0] <= 'T')) ){
                     num = 0;
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
                         num = num * 10 + cmd[i] - '0';
                         i++;
                     }
-                    if ( num >= 1 && num <= 19 ){                        
+                    if ( num >= 1 && num <= 19 ){
                         while ( i > 1 ){
                             cmd[--i] = '0' + num % 10;
                             num /= 10;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
                            printf("Succeed received!\n");
                            break;
                            }
-                           else Usage_info(cmd, 2);     
+                           else Usage_info(cmd, 2);
                            }
                            else perror("Client: Wait after move error!"); exit(1);
                            }
@@ -194,11 +194,11 @@ int main(int argc, char *argv[])
                                     printf("Succeed received!\n");
                                     break;
                                 }
-                                else Usage_info(cmd, 2);  
-                                printf("After_move buffer: %s", server_buf); 
+                                else Usage_info(cmd, 2);
+                                printf("After_move buffer: %s", server_buf);
                             }
                             else{
-                                perror("Client: Wait after move error!"); exit(1);       
+                                perror("Client: Wait after move error!"); exit(1);
                             }
                         }
                     }
@@ -207,21 +207,21 @@ int main(int argc, char *argv[])
                 else Usage_info(cmd, 0);
             }
             else Usage_info(cmd, 0);
-        }
-        
-        if ( strcmp(cmd, "QUIT") == 0 ){
-            //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
-            //    perror("Client: Send Error"); exit(1);
-            //}
-            if ( Send_2_Server(sockfd, cmd) < 0){
-                perror("Client: Send Error"); exit(1); 
+            }
+
+            if ( strcmp(cmd, "QUIT") == 0 ){
+                //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+                //    perror("Client: Send Error"); exit(1);
+                //}
+                if ( Send_2_Server(sockfd, cmd) < 0){
+                    perror("Client: Send Error"); exit(1);
 
                 }
-            }    
-        }    
+            }
+            }
 
             if ( cmd ) free(cmd);
             close(sockfd);
 
             return 0;
-    }
+        }

@@ -12,7 +12,7 @@ struct Server_Message{
 
 struct Client_Message{
     char operation[10];
-    
+
 };
 
 

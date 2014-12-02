@@ -1,5 +1,5 @@
 #ifndef BUSOPERATION_H_
-#define BUSOPERATION_H_ 
+#define BUSOPERATION_H_
 
 #define BOARDSIZE 19
 #define MAPTEXT_OFFSET 64
