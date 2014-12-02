@@ -20,7 +20,24 @@ Usage Guide
 ====
 + Install dependancies: `g++` `make` `gnugo`
 + Hit `make`
-+ Execute corresponding scripts on server or client side. `client_demo` will always ask the server for suggestions of next step and perform exactly the same step. `client` will recieve input from command line, just from where the script is executed. Attaching a display to HDMI port will provide a CLI, SSH or SERIAL terminal will do, too.
++ edit `/etc/hosts` file, add IP address for `go.m` `go.s1` `go.s2`
++ Execute corresponding scripts on server or client side. `client_demo` will always ask the server for suggestions of next step and perform exactly the same step. `client` will recieve input from command line, just from where the script is executed. Attaching a display to HDMI port will provide a CLI. SSH or SERIAL terminal will do, too.
+
+Display Guide(optional)
+====
++ Use Vivado 2014.1 to build Xillibus evaluation v1.3 (Choose Verilog) for Zybo. *This tutorial is for evaluation only, please refer to Xillybus Ltd. for licensing details.*
++ Install and configure`Xillinux` for Zybo.
++ *Change MAC address of Zybo board and write it to SPI*, make sure this info will not lost after power loss. Configure IP adresses for each board.
++ Some modifications and expansions has been made to the Vivado project. These files are in the `zynq-go-xillinux` dir. Replace corresponding files in evaluation kit. (If there's something missing, please feel free to contact me.)
++ Add IP cores, reference files provided in `zynq_go_xilinux/verilog/src/ref` dir, directly open may not work, add these IPs manually through wizard.
+ 1. `blk_mem_piecesmem`data [37 : 0], addr [4:0], always enabled
+ 2. `clk_wiz_0` CLK_OUT1 40M, CLK_OUT1 50M
+ 3. `goboard_info_ram` data [7 : 0], addr [8 : 0], always enabled
++ Build the project in Vivado again. Get the bit file. Copy the bit file to the FAT partition of the microSD card, overwrite the existing one.
++ Edit `busOperation.cpp` and change the macro to `#define XILLY_BUS`, that is, remove the letter `n`.
++ Follow the steps in previous section.
++ Attach a monitor to VGA port, a borad will show up.
+
 
 Known Issues
 ====
