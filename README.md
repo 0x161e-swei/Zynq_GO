@@ -26,7 +26,7 @@ Known Issues
 ====
 
 + Rarely, server/client fails to open socket connection.
-+ Some certain combination of server and client, such as x64 server with ARM clients may not work, they often stuck righter after opening the socket.
++ Some certain combination of server and client, such as x64 server with ARM clients may not work, they often stuck right after opening the socket.
 + Network traffic is not serialized.
 + A certain portion of the code is ugly, though it's working.
 + Serveral types and inaccurate English expressions
