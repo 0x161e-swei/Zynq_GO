@@ -20,7 +20,7 @@ Usage Guide
 ====
 + Install dependancies: `g++` `make` `gnugo`
 + Hit `make`
-+ edit `/etc/hosts` file, add IP address for `go.m` `go.s1` `go.s2`
++ edit `/etc/hosts` file, add IP address for `go.m` `go.s1` `go.s2`, actually only `go.m` matters.
 + Execute corresponding scripts on server or client side. `client_demo` will always ask the server for suggestions of next step and perform exactly the same step. `client` will recieve input from command line, just from where the script is executed. Attaching a display to HDMI port will provide a CLI. SSH or SERIAL terminal will do, too.
 
 Display Guide(optional)
