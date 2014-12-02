@@ -1,21 +1,32 @@
-Zynq GO:
+Zynq GO
+====
 
-```
-    	The Project Zynq go is based on three Zybo boards, with the open source gnugo, running the game of go under both linux and fpga logic.
-	The game of go inside the Zynq go is an online game with two clients acting as players and the server acting as a judge. 
-	It provides you with many ways of learning the go or playing go with your friends. 
+Zynq Go runs on three ZYBO boards, with the open source gnugo, running the game of Go under both linux and fpga logic.
+The game of go inside the Zynq go is an online game with two clients acting as players and the server acting as a judge.
+It provides you with many ways of learning the go or playing go with your friends.
 
-	When playing online go, first thing to do is to link the client to server with server address and your username. 
-	After that, you are starting your free trip to explore the go world with our project Zynq go. 
-	By the way, you can quit whenever since you start a game. 
-    
-    	Many operations were provided, for instance, you can either set a piece at any position available within the board, or simply pass. 
-    	Another way of setting a piece is to turn to server for help, asking the “judge” to come up with a proper move for you. 
-    	Actually, the “judge” turns to gnugo for help. And gnugo is a go-intelligence of level 0 to 10, with Monte Carlo method. 
-    
-    	The result of your move and the whole game frame would be displayed on a vga output via the server through fpga logic, while some debug message remaining local.
-```
+When playing online go, first thing to do is to link the client to server with server address and your username.
+After that, you are starting your free trip to explore the go world with our project Zynq go.
+By the way, you can quit whenever since you start a game.
 
-The presenting version is not bugless. It works fine but still some bugs need fixing.
+Many operations were provided, for instance, you can either set a piece at any position available within the board, or simply pass.
+Another way of setting a piece is to turn to server for help, asking the “judge” to come up with a proper move for you.
+Actually, the “judge” turns to gnugo for help. And gnugo is a go-intelligence of level 0 to 10, with Monte Carlo method.
 
-Something went wrong with the lastest source, the tagged version v0.14 was proven to be working, however, with fewer features.
+The result of your move and the whole game frame would be displayed on a vga output via the server through fpga logic, while some debug message remaining local.
+
+
+Usage Guide
+====
++ Install dependancies: `g++` `make` `gnugo`
++ Hit `make`
++ Execute corresponding scripts on server or client side. `client_demo` will always ask the server for suggestions of next step and perform exactly the same step. `client` will recieve input from command line, just from where the script is executed. Attaching a display to HDMI port will provide a CLI, SSH or SERIAL terminal will do, too.
+
+Known Issues
+====
+
++ Rarely, server/client fails to open socket connection.
++ Some certain combination of server and client, such as x64 server with ARM clients may not work, they often stuck righter after opening the socket.
++ Network traffic is not serialized.
++ A certain portion of the code is ugly, though it's working.
++ Serveral types and inaccurate English expressions
