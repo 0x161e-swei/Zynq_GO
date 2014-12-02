@@ -19,6 +19,8 @@
 
 #include "busOperation.h"
 
+#define nXILLY_BUS
+
 void busMap(unsigned char PiecesMap[BOARDSIZE][BOARDSIZE], unsigned int busRam[38]) {
     unsigned int temp;
     unsigned int u32;
@@ -47,7 +49,11 @@ int busSend(unsigned int busRam[38]) {
     int size_board;
     volatile unsigned int *mapped;
 
+    #ifdef XILLY_BUS
+    fd = open("/dev/uio0", O_RDWR);
+    #else
     fd = open("/dev/zero", O_RDWR);
+    #endif
     if (fd < 0) {
         perror("Failed to open devfile");
         return 1;
@@ -81,7 +87,11 @@ int busText(const char* display_buffer, bool dummyline) {
     volatile unsigned int *mapped;
     static int Current_Line = 0;
 
+    #ifdef XILLY_BUS
+    fd = open("/dev/uio0", O_RDWR);
+    #else
     fd = open("/dev/zero", O_RDWR);
+    #endif
     if (fd < 0) {
         perror("Failed to open devfile");
         return 1;
