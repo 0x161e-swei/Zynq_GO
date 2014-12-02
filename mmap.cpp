@@ -310,88 +310,106 @@ int Client_Communication(int fds, int color, PiecesPosition &position)
                 RoundDone = true;    
             }                    
         }
+        }
+        return Quit;  
+    } 
+
+    void Set_username(int fds, int num)
+    {
+        char *buf;
+        int Len;
+        buf = (char *)malloc(255 * sizeof(char));
+        if ( (Len = recv(fds, buf, 255, 0)) < 0 ){
+            perror("Username receive error"); exit(1);
+        }  
+        else{
+            buf[Len] = '\0';
+            /*
+               if ( fds == fds1 ){
+               User_name[0] = (char *)malloc(strlen(buf) + 1);
+               strcpy(User_name[0], buf);
+               }
+               else{
+               User_name[1] = (char *)malloc(strlen(buf) + 1);
+               strcpy(User_name[1], buf);
+               }
+               */ 
+            User_name[num] = (char *)malloc(strlen(buf) + 1);
+            strcpy(User_name[num], buf);
+        }
+        free(buf);
     }
-    return Quit;  
-} 
 
-void Set_username(int fds, int num)
-{
-    char *buf;
-    int Len;
-    buf = (char *)malloc(255 * sizeof(char));
-    if ( (Len = recv(fds, buf, 255, 0)) < 0 ){
-        perror("Username receive error"); exit(1);
-    }  
-    else{
-        buf[Len] = '\0';
-        /*
-           if ( fds == fds1 ){
-           User_name[0] = (char *)malloc(strlen(buf) + 1);
-           strcpy(User_name[0], buf);
-           }
-           else{
-           User_name[1] = (char *)malloc(strlen(buf) + 1);
-           strcpy(User_name[1], buf);
-           }
-           */ 
-        User_name[num] = (char *)malloc(strlen(buf) + 1);
-        strcpy(User_name[num], buf);
+    void Welcome_user(int fd, int num)
+    {
+        char *Welcome_buffer_1, *Welcome_buffer_2;
+
+        user[num] = true;
+        Set_username(fd, num);
+        Welcome_buffer_1 = (char*)malloc(16 * sizeof(char));
+        Welcome_buffer_2 = (char*)malloc(16 * sizeof(char));
+        memset(Welcome_buffer_2, 0, 16);
+        sprintf(Welcome_buffer_1, "Hello, Player%d:  ", num + 1);
+        busText(Welcome_buffer_1);
+        sprintf(Welcome_buffer_2, "  %s", User_name[num]);
+        busText(Welcome_buffer_2);
+        free(Welcome_buffer_1);
+        free(Welcome_buffer_2);
     }
-    free(buf);
-}
 
-void Welcome_user(int fd, int num)
-{
-    char *Welcome_buffer_1, *Welcome_buffer_2;
+    int main()
+    {
 
-    user[num] = true;
-    Set_username(fd, num);
-    Welcome_buffer_1 = (char*)malloc(16 * sizeof(char));
-    Welcome_buffer_2 = (char*)malloc(16 * sizeof(char));
-    memset(Welcome_buffer_2, 0, 16);
-    sprintf(Welcome_buffer_1, "Hello, Player%d:  ", num + 1);
-    busText(Welcome_buffer_1);
-    sprintf(Welcome_buffer_2, "  %s", User_name[num]);
-    busText(Welcome_buffer_2);
-    free(Welcome_buffer_1);
-    free(Welcome_buffer_2);
-}
+        int piecesTurn = 1, j;
+        bool ret;
+        cout<<"Initialized GoBoard"<<endl;
 
-int main()
-{
+        //cout<<client.Ping()<<endl;
 
-    int piecesTurn = 1, j;
-    bool ret;
-    cout<<"Initialized GoBoard"<<endl;
+        int sockfd;
+        sockfd = initSocket("0.0.0.0");
 
-    //cout<<client.Ping()<<endl;
+        printf("server: waiting for connections...\n");
+        busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+        busSend(busRam);              //Send board info to the bus
 
-    int sockfd;
-    sockfd = initSocket("0.0.0.0");
+        /*  Here to receive the first two message from fds1 and fds2
+         *
+         *  Usr1 & Usr2
+         */
 
-    printf("server: waiting for connections...\n");
-    busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
-    busSend(busRam);              //Send board info to the bus
+        for (j = 0; j < 32; j++)
+            busText("                ");
 
-    /*  Here to receive the first two message from fds1 and fds2
-     *
-     *  Usr1 & Usr2
-     */
-
-    for (j = 0; j < 32; j++)
-        busText("                ");
-
-    fds1 = waitClient(sockfd); //block here
-    Welcome_user(fds1, 0);
+        fds1 = waitClient(sockfd); //block here
+        Welcome_user(fds1, 0);
 
 
-    fds2 = waitClient(sockfd); //block here
-    Welcome_user(fds2, 1);   
+        fds2 = waitClient(sockfd); //block here
+        Welcome_user(fds2, 1);   
 
-    int Quit;
+        int Quit;
 
-    PiecesPosition position = { 0, 1, 1 };
+        PiecesPosition position = { 0, 1, 1 };
 
+        while ( 1 ) {
+            busText("Player1 thinking", false);
+            Quit = Client_Communication(fds1, 1, position);
+            busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+            busSend(busRam);              //Send board info to the bus
+            if ( Quit != 0 ) 
+                break;
+            usleep(5000);
+            busText("Player2 thinking", false);
+            Quit = Client_Communication(fds2, 2, position);
+            busMap(goboard.PiecesMap, busRam);    // Map the board into 32bit bus format
+            busSend(busRam);              //Send board info to the bus
+            if ( Quit != 0 )
+                break;
+        }
+
+    // TODO: clean up the following block
+    /*
     while ( 1 ) {
         busText("Player1 thinking", false);
         Quit = Client_Communication(fds1, 1, position);
@@ -407,6 +425,7 @@ int main()
         if ( Quit != 0 )
             break;
     }
+    */
 
 
     printf("Game_Over\n");
@@ -453,43 +472,44 @@ int main()
         user[1] = false;   
     }
  
-    if ( User_name[0] ) free(User_name[0]);
-    if ( User_name[1] ) free(User_name[1]);
-    return 0;               // ???
 
-    /*    if (!fork()) { // this is the child process
-          close(sockfd); // child doesn't need the listener
-          if (send(new_fd, "Hello, world!", 13, 0) == -1)
-          perror("send");
-          close(new_fd);
-          exit(0);
-          }*/
-    //close(new_fd);  // parent doesn't need this
+        if ( User_name[0] ) free(User_name[0]);
+        if ( User_name[1] ) free(User_name[1]);
+        return 0;               // ???
 
-    for(;;){
-        //PiecesPosition position = goboard.waitInput();
-        PiecesPosition position = { 0, 1, 1 };
-        //client.Move(position, piecesTurn);
-        //cout<<ret<<endl;
+        /*    if (!fork()) { // this is the child process
+              close(sockfd); // child doesn't need the listener
+              if (send(new_fd, "Hello, world!", 13, 0) == -1)
+              perror("send");
+              close(new_fd);
+              exit(0);
+              }*/
+        //close(new_fd);  // parent doesn't need this
 
-        ret = 1;
-        if(ret){
-            //goboard.setPieces(position, piecesTurn);
-            cout << client.GenMove(1, position) << endl;
-            cout<<client.ShowBoard(goboard.PiecesMap, bc, wc)<<endl;
-            //goboard.refresh();
+        for(;;){
+            //PiecesPosition position = goboard.waitInput();
+            PiecesPosition position = { 0, 1, 1 };
+            //client.Move(position, piecesTurn);
+            //cout<<ret<<endl;
 
-            //if(++piecesTurn > 2) piecesTurn = 1;
-            cout<<client.GenMove(2, position)<<endl;
+            ret = 1;
+            if(ret){
+                //goboard.setPieces(position, piecesTurn);
+                cout << client.GenMove(1, position) << endl;
+                cout<<client.ShowBoard(goboard.PiecesMap, bc, wc)<<endl;
+                //goboard.refresh();
 
-            cout<<client.ShowBoard(goboard.PiecesMap, bc, wc)<<endl;
+                //if(++piecesTurn > 2) piecesTurn = 1;
+                cout<<client.GenMove(2, position)<<endl;
 
-            //goboard.refresh();
+                cout<<client.ShowBoard(goboard.PiecesMap, bc, wc)<<endl;
 
-            if(++piecesTurn > 2) piecesTurn = 1;
+                //goboard.refresh();
+
+                if(++piecesTurn > 2) piecesTurn = 1;
+            }
         }
-    }
 
-    return 0;
-}
+        return 0;
+    }
 

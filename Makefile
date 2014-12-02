@@ -9,7 +9,6 @@ LDFLAG = $(LIB)
 #LOC    = ./
 
 all: $(EXECUTABLE)
-	chmod +x gnugo.gtp
 
 server: mmap.o GTPClient.o busOperation.o Communication_Bridge.o
 	$(CXX) -o $@ $^
