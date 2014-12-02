@@ -17,6 +17,8 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <time.h>
+#include "Communication_Bridge.h"
+#include "busOperation.h"
 
 #define PORT "3490" // the port client will be connecting to 
 
@@ -25,6 +27,8 @@
 #define ECHOFLAGS (ECHO | ECHOE | ECHOK | ECHONL | ICANON)
 
 // get sockaddr, IPv4 or IPv6:
+
+
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -43,9 +47,9 @@ void toUpper_s(char * str, int len)
 
 int main(int argc, char *argv[])
 {
-    int sockfd;  
+    int sockfd, j;  
     char server_buf[MAXDATASIZE];
-    const char *cmd = "GEN";
+    char cmd[] = "GEN";
     struct addrinfo hints, *servinfo, *p;
     bool Game_over = false;
     int Recv_Bytenum, Send_Bytenum;
@@ -98,12 +102,15 @@ int main(int argc, char *argv[])
      *  Define the argv[2] as User name 
      *  the first messgae is not gonna be sent
      */
+    for (j = 0; j < 32; j++)
+        busText("                "); 
     send(sockfd, argv[2], strlen(argv[2]) + 1, 0);
     Game_over = false;
     while( !Game_over ){
         /* Wait for server to wake me up */
-        if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
-            server_buf[Recv_Bytenum] = '\0';
+        //if ( (Recv_Bytenum = recv(sockfd, server_buf, sizeof(server_buf), 0)) > 0 ){
+        if ( (Recv_Bytenum = Reqs_4_Server(sockfd, server_buf)) > 0 ){
+            //server_buf[Recv_Bytenum] = '\0';
             printf("%s\n", server_buf);
             if ( strcmp(server_buf, "GAMEOVER") == 0 ){
                 Game_over = true;
@@ -120,7 +127,8 @@ int main(int argc, char *argv[])
 
         /* Read the client operation */
         if ( strcmp(cmd, "GEN") == 0 ){                                 
-            if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+            //if ( (Send_Bytenum = send(sockfd, cmd, strlen(cmd), 0)) < 0 ){
+            if ( (Send_Bytenum = Send_2_Server(sockfd, cmd)) < 0 ){
                 perror("Client: Send Error");
                 exit(1);
             }

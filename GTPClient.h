@@ -30,6 +30,8 @@ private:
     void GTPFork();
     bool GTPCommand(std::string cmd, std::stringstream &rets);
 public:
+
+
     GTPClient(const std::string prog);
     bool Ping();
     bool Move(PiecesPosition position, int color);
@@ -38,5 +40,7 @@ public:
     std::string ShowResult();              // Added to show final score
     ~GTPClient();
 };
+
+
 
 #endif /* GTPCLIENT_H_ */
