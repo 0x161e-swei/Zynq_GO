@@ -17,14 +17,14 @@ The result of your move and the whole game frame would be displayed on a vga out
 
 
 Usage Guide
-====
+----
 + Install dependancies: `g++` `make` `gnugo`
 + Hit `make`
-+ edit `/etc/hosts` file, add IP address for `go.m` `go.s1` `go.s2`
++ edit `/etc/hosts` file, add IP address for `go.m` `go.s1` `go.s2`, actually only `go.m` matters.
 + Execute corresponding scripts on server or client side. `client_demo` will always ask the server for suggestions of next step and perform exactly the same step. `client` will recieve input from command line, just from where the script is executed. Attaching a display to HDMI port will provide a CLI. SSH or SERIAL terminal will do, too.
 
 Display Guide(optional)
-====
+----
 + Use Vivado 2014.1 to build Xillibus evaluation v1.3 (Choose Verilog) for Zybo. *This tutorial is for evaluation only, please refer to Xillybus Ltd. for licensing details.*
 + Install and configure`Xillinux` for Zybo.
 + *Change MAC address of Zybo board and write it to SPI*, make sure this info will not lost after power loss. Configure IP adresses for each board.
@@ -40,10 +40,53 @@ Display Guide(optional)
 
 
 Known Issues
-====
+----
 
 + Rarely, server/client fails to open socket connection.
 + Some certain combination of server and client, such as x64 server with ARM clients may not work, they often stuck right after opening the socket.
 + Network traffic is not serialized.
 + A certain portion of the code is ugly, though it's working.
 + Serveral types and inaccurate English expressions
+
+Guide for Prebuilt Image
+----
+If someone doesn't feel like to build it from source, here is a guide for pre-built image.  File an issue or drop a mail to request this image.
+
++ Three ZYBOs
++ Three microSD manufactured with at least 7,948,206,080 bytes 
+
+
+### Preparation
+This guide only applies in *nix environments
+
++  `sudo -s`
++  umount every partition whithin sd card if it's automatically mounted when inserted into the computer.
++ `unxz -c sd_image.xz | dd of=/dev/sdx`
+	+ change `sdx` according to your circumstance
+	+ type exaclty `sdx`, not `sdx#`, where `#` is a number.
++ sample output:
+```
+15523840+0 records in
+15523840+0 records out
+7948206080 bytes (7.9 GB) copied, 1461.21 s, 5.4 MB/s
+```
+
+### Config
++ Insert sd cards into ZYBOs.
++ Connect Serial cables.
++ Hit enter multiple times in serial console immediately after power on. It should enter into  uboot. Then set MAC address of three ZYBOs properly.
+(Later one could assign IPs from DHCP server according to MAC addresses in this step)
++ Reset the board and boot into Linux. (root passwd is 123987)
++ Change of hostname is recommended: `sudo sysctl -w kernel.hostname=another.host.name` or edit `/etc/hostname`
+
+### Run
+HDMI displays command line (SSH or Serial is also applicable)
+(input from onboard keyboard directs to hdmi side (tty1) )
+VGA renders go board
+
+cd into `Zynq_GO`  
+server: `bash run_server_demo.sh`  
+client: `bash run_client_demo.sh` : pieces will be automatically placed  
+client: `bash run_client_input.sh` : reads input about pieces position from where it's excuted
+
+Stop clients and then stop server.
